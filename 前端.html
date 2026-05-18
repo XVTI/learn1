@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>供应商风控AI助手</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Microsoft YaHei", sans-serif; }
+        body { background: #f7f8fa; min-height: 100vh; }
+
+        #floatBtn {
+            position: fixed; bottom: 50px; right: 50px;
+            width: 70px; height: 70px;
+            border-radius: 50%;
+            background: #2b7bff;
+            color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; cursor: pointer;
+            box-shadow: 0 8px 24px rgba(0,82,204,0.2);
+            z-index: 9999;
+        }
+        #floatBtn:hover { transform: scale(1.08); }
+
+        #chatWindow {
+            position: fixed; bottom: 130px; right: 50px;
+            width: 420px; height: 600px;
+            background: white; border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: none; flex-direction: column;
+            z-index: 999;
+        }
+        .chat-header {
+            padding: 16px; background: #2b7bff; color: white; text-align: center; font-weight: bold; }
+        .chat-box { flex:1; padding:20px; overflow-y:auto; background:#f9f9f9; }
+        .message { margin-bottom:12px; max-width:80%; word-wrap:break-word; }
+        .user-message { margin-left:auto; background:#2b7bff; color:white; padding:10px 14px; border-radius:14px 14px 4px 14px; }
+        .ai-message { background:white; border:1px solid #eee; padding:10px 14px; border-radius:14px 14px 14px 4px; color:#333; }
+        .input-area { display:flex; padding:12px; gap:10px; border-top:1px solid #eee; }
+        #userInput { flex:1; padding:12px; border:1px solid #ddd; border-radius:12px; outline:none; }
+        button { padding:0 20px; background:#2b7bff; color:white; border:none; border-radius:12px; cursor:pointer; }
+    </style>
+</head>
+<body>
+
+<div id="floatBtn">AI风控</div>
+
+<div id="chatWindow">
+    <div class="chat-header">供应商风险AI助手</div>
+    <div class="chat-box" id="chatBox"></div>
+    <div class="input-area">
+        <input type="text" id="userInput" placeholder="输入供应商名称">
+        <button onclick="sendMessage()">发送</button>
+    </div>
+</div>
+
+<script>
+// ✅ 这是最终可用地址
+const API_URL = "http://localhost:8080/ai/chat";
+
+document.getElementById("floatBtn").onclick = function(){
+    let w = document.getElementById("chatWindow");
+    w.style.display = w.style.display=="flex" ? "none" : "flex";
+};
+
+function addMsg(text, isUser){
+    let c = document.getElementById("chatBox");
+    let d = document.createElement("div");
+    d.className = "message " + (isUser ? "user-message" : "ai-message");
+    d.innerText = text;
+    c.appendChild(d);
+    c.scrollTop = c.scrollHeight;
+}
+
+async function sendMessage(){
+    let i = document.getElementById("userInput");
+    let t = i.value.trim();
+    if(!t) return;
+    addMsg(t, true);
+    i.value = "";
+
+    try {
+        let r = await fetch(API_URL, {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({ message: t, supplierName: t })
+        });
+        let d = await r.json();
+        addMsg(d.answer, false);
+    } catch(e){
+        addMsg("❌ 无法连接后端，请确认Python正在运行", false);
+    }
+}
+
+document.getElementById("userInput").addEventListener("keydown", e=>{
+    if(e.key==="Enter") sendMessage();
+});
+
+addMsg("你好！请输入供应商名称，我将为你查询风险信息。", false);
+</script>
+</body>
+</html>
